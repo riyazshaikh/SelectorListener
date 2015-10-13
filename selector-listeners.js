@@ -9,7 +9,7 @@
 		startEvent = function(event){
 			event.selector = (events[event.animationName] || {}).selector;
 			((this.selectorListeners || {})[event.animationName] || []).forEach(function(fn){
-				fn.call(this, event);
+				if (fn.call(this, event) === false) this.removeSelectorListener(event.selector, fn);
 			}, this);
 		},
 		prefix = (function() {
