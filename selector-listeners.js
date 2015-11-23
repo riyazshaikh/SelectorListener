@@ -8,18 +8,23 @@
 		startNames = ['animationstart', 'oAnimationStart', 'MSAnimationStart', 'webkitAnimationStart'],
 		startEvent = function(event){
 			event.selector = (events[event.animationName] || {}).selector;
+			var removeList = [];
 			((this.selectorListeners || {})[event.animationName] || []).forEach(function(fn){
-				if (fn.call(this, event) === false) this.removeSelectorListener(event.selector, fn);
+				if (fn.call(this, event) === false) removeList.push(fn);
+			}, this);
+			removeList.forEach(function(fn) {
+				this.removeSelectorListener(event.selector, fn);	
 			}, this);
 		},
 		prefix = (function() {
 			var duration = 'animation-duration: 0.001s;',
 				name = 'animation-name: SelectorListener !important;',
+				visibility = 'visibility:hidden;',
 				computed = window.getComputedStyle(document.documentElement, ''),
 				pre = (Array.prototype.slice.call(computed).join('').match(/moz|webkit|ms/)||(computed.OLink===''&&['o']))[0];
 			return {
 				css: '-' + pre + '-',
-				properties: '{' + duration + name + '-' + pre + '-' + duration + '-' + pre + '-' + name + '}',
+				properties: '{' + visibility + duration + name + '-' + pre + '-' + duration + '-' + pre + '-' + name + '}',
 				keyframes: !!(window.CSSKeyframesRule || window[('WebKit|Moz|MS|O').match(new RegExp('(' + pre + ')', 'i'))[1] + 'CSSKeyframesRule'])
 			};
 		})();
@@ -39,8 +44,9 @@
 				+'from { outline-color: #fff; } to { outline-color: #000; }'
 			+ '}');
 			keyframes.appendChild(node);
-			styles.sheet.insertRule(selector + prefix.properties.replace(/SelectorListener/g, key), 0);
-			events[key] = { count: 1, selector: selector, keyframe: node, rule: styles.sheet.cssRules[0] };
+			var rule = document.createTextNode(selector + prefix.properties.replace(/SelectorListener/g, key));
+			styles.appendChild(rule);
+			events[key] = { count: 1, selector: selector, keyframe: node, rule: rule };
 		} 
 		
 		if (listeners.count) listeners.count++;
@@ -64,7 +70,7 @@
 			var event = events[selectors[selector]];
 			event.count--;
 			if (!event.count){
-				styles.sheet.deleteRule(styles.sheet.cssRules.item(event.rule));
+				styles.removeChild(event.rule);
 				keyframes.removeChild(event.keyframe);
 				delete events[key];
 				delete selectors[selector];
@@ -77,5 +83,10 @@
 			}, this);
 		}
 	};
-	
+
+	// Single invocation version
+	HTMLDocument.prototype.onSelector = HTMLElement.prototype.onSelector = function(selector,fn) {
+		this.addSelectorListener(selector, function(event) { fn(event); return false; });
+	};
+
 })();
