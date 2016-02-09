@@ -2,6 +2,8 @@
 	
 	var events = {},
 		selectors = {},
+		docProto = typeof HTMLDocument !== 'undefined' ? HTMLDocument.prototype : Document.prototype,
+		elemProto = typeof HTMLElement !== 'undefined' ? HTMLElement.prototype : Element.prototype,
 		styles = document.createElement('style'),
 		keyframes = document.createElement('style'),
 		head = document.getElementsByTagName('head')[0],
@@ -33,7 +35,7 @@
 	head.appendChild(styles);
 	head.appendChild(keyframes);
 	
-	HTMLDocument.prototype.addSelectorListener = HTMLElement.prototype.addSelectorListener = function(selector, fn){
+	docProto.addSelectorListener = elemProto.addSelectorListener = function(selector, fn){
 		var key = selectors[selector],
 			listeners = this.selectorListeners = this.selectorListeners || {};
 			
@@ -60,7 +62,7 @@
 		(listeners[key] = listeners[key] || []).push(fn);
 	};
 	
-	HTMLDocument.prototype.removeSelectorListener = HTMLElement.prototype.removeSelectorListener = function(selector, fn){
+	docProto.removeSelectorListener = elemProto.removeSelectorListener = function(selector, fn){
 		var listeners = this.selectorListeners || {},
 			key = selectors[selector],
 			listener = listeners[key] || [],
